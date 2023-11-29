@@ -4,9 +4,6 @@ import time
 
 
 capture = cv.VideoCapture(0)
-# capture.set(3, 500)
-# capture.set(4, 700)
-# capture.set(10, 90)
 
 haar_cascade_face = cv.CascadeClassifier('haar_face.xml')
 haar_cascade_eye = cv.CascadeClassifier('haarcascade_eye.xml')
@@ -28,14 +25,14 @@ while True:
             cv.imshow('Video', frame)
 
             # Sharpening the video frame
-            kernel = np.array([[0, -1, 0], [-1, 9.5, -1], [0, -1, 0]])
+            kernel = np.array([[0, -1, 0], [-1, 7, -1], [0, -1, 0]])
             sharpened = cv.filter2D(frame, -1, kernel)
             cv.imshow('Sharpened Frame', sharpened)
 
             gray = cv.cvtColor(sharpened, cv.COLOR_BGR2GRAY)
 
-            eyes_rect = haar_cascade_eye.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=15)
-            face_rect = haar_cascade_face.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5)
+            eyes_rect = haar_cascade_eye.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=3)
+            face_rect = haar_cascade_face.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=6)
             
             
             # eye_rect_start = tuple(eyes_rect[0][:2])
@@ -46,12 +43,13 @@ while True:
             # enboxing all faces in blue color just to see that face is being detected
             for (x,y,w,h) in face_rect:
                 cv.rectangle(frame, (x,y), (x+w,y+h), (255,0,0), thickness=2)
+            print(f'FACE:\n{face_rect}')
+            print(f'# of faces detected: {len(face_rect)}\n')
+            print(f'Eyes:\n{eyes_rect}\n# of eyes detected: {len(eyes_rect)}')
 
             # enboxing the face (with the color: (255,255,0)) closest to the camera...ignoring the rest. it's the only face which will be sent to further processing
-            if (len(face_rect)>=1 or len(eyes_rect)>=2):
-                mul_last_two_elements = lambda row : row[-2] * row[-1] # implemnted for the purpose of getting the area of box around the face. The shape of 'face_rect' is (n,4). Where 'n' is the number of faces detected and 4 are the 'x-coord, y-coord, width and height' respectively. This function multiplies the last two elements (width and height) to get the area.
-                # def mul_last_two_elements(row):
-                #     return row[-2] * row[-1]
+            if (len(face_rect)>=1):
+                mul_last_two_elements = lambda row : row[-2] * row[-1] # getting the area of box around the face...The shape of 'face_rect' is (n,4). Where 'n' is the number of faces detected and 4 are the 'x-coord, y-coord, width and height' respectively. This function multiplies the last two elements (width and height) to get the area.
                 
                 # getting the index of face closest to the camera
                 i = np.argmax(np.apply_along_axis(mul_last_two_elements, axis=1, arr=face_rect))
@@ -59,11 +57,8 @@ while True:
                 cv.rectangle(frame, (f_x,f_y), (f_x+f_w, f_y+f_h), (255,255,0), thickness=2)
 
                 # eyes detected in the face closest to the camera.
-                if (len(eyes_rect)>1):
+                # if (len(eyes_rect)>1):
                     
-
-
-
 
 
             for (x,y,w,h) in eyes_rect:
