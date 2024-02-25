@@ -1,5 +1,95 @@
+import cv2 as cv
+import pyautogui as pg
+import mediapipe as mp
+import pickle
+from tensorflow.keras.models import load_model
+
+cap = cv.VideoCapture(0)
+cap.set(cv.CAP_PROP_FRAME_HEIGHT, 1280)
+cap.set(cv.CAP_PROP_FRAME_WIDTH, 720)
+face_mesh = mp.solutions.face_mesh.FaceMesh(refine_landmarks=True)
+
+screen_w, screen_h = pg.size()
+
+# model = pickle.load(open('OpenCloseEyeClassification//model.pkl', 'rb'))
+model = load_model('OpenCloseEyeClassification//model.h5')  # loading the model
+i = 0
+while True:
+    _, frame = cap.read()
+    frame = cv.flip(frame, 1)
+
+    # Convert the frame to RGB
+    rgb_frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+
+    # Processing through faceMesh
+    output = face_mesh.process(rgb_frame)
+    face_landmarks = output.multi_face_landmarks
+
+    # Frame height and width to get necessary scaling
+    frame_h, frame_w, _ = frame.shape
+
+    # In case there is a face
+    if face_landmarks:
+        # We are considering only one face
+        landmarks = face_landmarks[0].landmark
+
+        # Landmarks are selected to make a rectangle around the right eye as ROI
+        # points = [bottom_right, top_right, bottom_left, top_left] ---> landmarks' positions
+        points = [landmarks[340], landmarks[301], landmarks[6], landmarks[9]]
+
+        x_points = []
+        y_points = []
+        
+        # Looping through the points list and append the x and y coordinates of each landmark to the x_points and y_points lists
+        for point in points:
+            x_points.append(int(point.x * frame_w))
+            y_points.append(int(point.y * frame_h))
+        
+        # Find the minimum and maximum x and y coordinates of the rectangle
+        min_x = min(x_points)
+        max_x = max(x_points)
+        min_y = min(y_points)
+        max_y = max(y_points)
+
+        ################## IMAGE CROPING TO GET BOUNDING BOX ##########################
+        
+        # Eye box is extracted out to get only right eye
+        eye_box1 = frame[min_y:max_y, min_x:max_x]
+        cv.imshow('Eye Box', eye_box1)
+
+        # prediction on eyebox
+        eye_box = cv.resize(eye_box1, (128, 128))
+        eye_box = eye_box.reshape((1, 128, 128, 3))
+        prediction = int(model.predict(eye_box))
+        if prediction == 0:
+            # print("Close")
+            cv.imwrite(f'results/close_{i}.jpg', eye_box1)
+        else:
+            # print("Open")
+            cv.imwrite(f'results/open_{i}.jpg', eye_box1)
+        print("<--->")
+        i += 1
+        # print(model.predict(eye_box))
+
+
+    # cv.imshow('Eye Controlled Mouse', frame)
+    if cv.waitKey(1) & 0xFF == ord('q'):  # Press 'q' to exit the loop
+        break
+
+
+
+
+
+
+
+
+
+
+
+"""
 import numpy as np
 import cv2 as cv
+import pickle
 import time
 import multiprocessing
 import psutil
@@ -23,8 +113,6 @@ def get_eyebox_coord(frame, haar_cascade_face, haar_cascade_eye):
 
     gray = cv.cvtColor(sharpened, cv.COLOR_BGR2GRAY)
     face_rect = haar_cascade_face.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5)
-    # print(f'FACE:\n{face_rect}')
-    # print(f'# of faces detected: {len(face_rect)}\n')
 
     for (x,y,w,h) in face_rect:
         cv.rectangle(frame, (x,y), (x+w,y+h), (255,0,0), thickness=2)
@@ -55,49 +143,28 @@ def get_eyebox_coord(frame, haar_cascade_face, haar_cascade_eye):
     # cv.imshow('Face extracted', closest_face)
     return eyes_rect
 
-
-frame_rate = 10 # required frame rate
-prev = 0
-time_limit = 2 # get the eye coordinates every n=(time_limit*frame_rate) frames. Here time_limit is in seconds
-# t = 0
-counter = 0
-num_of_times_eye_coord_calculated = 0
-num = 0
-
-start_time = time.time()
+is_eye_detected = False
 while True:
     isTrue, frame = capture.read()
     if frame is not None:
         cv.imshow('Frame', frame)
-    t1 = time.time()
-    time_lapsed = t1 - prev
-
-    if (time_lapsed >= 1.0/frame_rate):
-        prev = time.time()
-        counter+=1
-        
-        if frame is not None and frame.size > 0:
-            # time_since_last_check = time.time() - t
-            num += 1
-            if (counter % (time_limit*frame_rate) == 1):
-                # t = time.time()
-                eyes_rect = get_eyebox_coord(frame, haar_cascade_face, haar_cascade_eye)
-                num_of_times_eye_coord_calculated += 1
-        else:
-            break
-        
-        if (len(eyes_rect) != 0):
-            x, y, w, h = eyes_rect[0]
-            eye_cropped = frame[x-20:x+w+20, y:y+h+40]
-            cv.imshow("eye", eye_cropped)
-        # counter += 1
-        
-    if cv.waitKey(100) & 0xFF==ord('d'):
+    
+    if not is_eye_detected:
+        eyes_rect = get_eyebox_coord(frame, haar_cascade_face, haar_cascade_eye)
+        if len(eyes_rect) > 0:
+            is_eye_detected = True
+    
+    if len(eyes_rect) != 0:
+        x, y, w, h = eyes_rect[0]
+        eye_cropped = frame[x - 20:x + w + 20, y:y+h+40]
+        cv.imshow("eye", eye_cropped)
+        model = pickle.load(open('Open Close Eye Classification/model.pkl' , 'rb'))
+        prediction = model.predict(eye_cropped)
+    
+    if cv.waitKey(1) & 0xFF==ord('d'):
         break
 
-print(f"Time taken: {time.time()-start_time}")
-print(counter)
-print(f'number of times eye coord calculated: {num_of_times_eye_coord_calculated}')
-print(num)
+
 capture.release()
 cv.destroyAllWindows()
+"""
