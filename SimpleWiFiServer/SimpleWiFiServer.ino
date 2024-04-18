@@ -1,5 +1,6 @@
 // Load Wi-Fi library
 #include <WiFi.h>
+#include <ESPAsyncWebServer.h>
 
 // Network credentials Here
 const char* ssid     = "Can't connect to this network ";
@@ -7,6 +8,7 @@ const char* password = "hehehehe";
 
 // Set web server port number to 80
 WiFiServer server(80);
+// AsyncWebServer server(80);
 
 // Variable to store the HTTP request
 String header;
@@ -115,33 +117,35 @@ void loop() {
             client.println("<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
             client.println("<link rel=\"icon\" href=\"data:,\">");
             // CSS to style the on/off buttons
-            client.println("<style>body { font-family: monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }");
-            client.println(".container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }");
-            client.println(".button { background-color: yellowgreen; border: none; color: white; padding: 16px 40px; text-decoration: none; font-size: 32px; text-align: center; cursor: pointer; border-radius: 10px; transition-duration: 0.4s; }");
-            client.println(".button2 { background-color: gray; }</style></head>");
+            client.println("<style>body { font-family: monospace; margin: 0; }");
+            client.println(".container { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; height: 100vh; }");
+            client.println(".button { border: none; color: white; text-decoration: none; font-size: 32px; text-align: center; cursor: pointer; transition-duration: 0.4s; width: calc(100% - 20px); height: calc(100% - 20px); display: flex; justify-content: center; align-items: center; background-size: contain; background-repeat: no-repeat; background-position: center; }"); // Adjusted width and height to include spacing
+            client.println(".button.off { background-color: rgb(40,38,51); }");
+            client.println(".button2 { background-color: rgb(12,141,1); }</style></head>");
 
-            client.println("<body><h1>ESP32 Web Server</h1>");
+            // client.println("<body><h1>ESP32 Web Server</h1>");
+            client.println("<body>");
             client.println("<div class=\"container\">");
 
-            if (statePin12 == "off") {
-              client.println("<a href=\"/12/on\" class=\"button\">Light ON</a>");
+            if (statePin12 == "on") {
+              client.println("<a href=\"/12/off\" class=\"button button2\"><img src=\"light.png\"></a>");
             } else {
-              client.println("<a href=\"/12/off\" class=\"button button2\">Light OFF</a>");
+              client.println("<a href=\"/12/on\" class=\"button off\"><img src=\"light.png\"></a>");
             }
-            if (statePin13 == "off") {
-              client.println("<a href=\"/13/on\" class=\"button\">Fan ON</a>");
+            if (statePin13 == "on") {
+              client.println("<a href=\"/13/off\" class=\"button button2\"><img src=\"fan\"></a>");
             } else {
-              client.println("<a href=\"/13/off\" class=\"button button2\">Fan OFF</a>");
+              client.println("<a href=\"/13/on\" class=\"button off\"><img src=\"fan\"></a>");
             }
-            if (statePin14 == "off") {
-              client.println("<a href=\"/14/on\" class=\"button\">TV ON</a>");
+            if (statePin14 == "on") {
+              client.println("<a href=\"/14/off\" class=\"button button2\"><img src=\"tv\"></a>");
             } else {
-              client.println("<a href=\"/14/off\" class=\"button button2\">TV OFF</a>");
+              client.println("<a href=\"/14/on\" class=\"button off\"><img src=\"tv\"></a>");
             }
-            if (statePin27 == "off") {
-              client.println("<a href=\"/27/on\" class=\"button\">AC ON</a>");
+            if (statePin27 == "on") {
+              client.println("<a href=\"/27/off\" class=\"button button2\"><img src=\"ac\"></a>");
             } else {
-              client.println("<a href=\"/27/off\" class=\"button button2\">AC OFF</a>");
+              client.println("<a href=\"/27/on\" class=\"button off\"><img src=\"ac\"></a>");
             }
             client.println("</div>");
             client.println("</body></html>");
