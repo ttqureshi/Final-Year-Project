@@ -3,6 +3,10 @@ from tkinter import ttk
 from PIL import Image, ImageDraw, ImageTk
 import webbrowser
 
+import cv2 as cv
+import mediapipe as mp
+import json
+
 class SetupWindow:
     def __init__(self, master):
         self.master = master
@@ -11,6 +15,10 @@ class SetupWindow:
 
         self.positions = ['topleft', 'top center', 'topright', 'midleft', 'midcenter', 'midright', 'bottomleft', 'bottomcenter', 'bottomright']
         self.current_position_index = 0
+
+        self.cap = cv.VideoCapture(0)
+        self.face_mesh = mp.solutions.face_mesh.FaceMesh(refine_landmarks=True)
+        self.iris_positions = {}
 
         self.show_instructions()
 
@@ -48,7 +56,7 @@ class SetupWindow:
 
         radius = 50
         x, y = self.get_position_coordinates(position, width, height)
-        self.animate_circle(x, y, radius)
+        self.animate_circle(x, y, radius, position)
 
     def get_position_coordinates(self, position, width, height):
         if position == 'topleft':
@@ -70,12 +78,35 @@ class SetupWindow:
         elif position == 'bottomright':
             return width, height
 
-    def animate_circle(self, x, y, radius):
+    def animate_circle(self, x, y, radius, position):
         circle = self.canvas.create_oval(x - radius, y - radius, x + radius, y + radius, outline="red", width=5)
+        self.process_and_read_coordinates(position)
         self.master.after(1400, lambda: self.canvas.delete(circle))
         self.master.after(1400, self.highlight_next_position)
 
+    def process_and_read_coordinates(self, position):
+        _, frame = self.cap.read()
+        frame = cv.flip(frame, 1)
+
+        rgb_frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+
+        # Processing through face mesh
+        output = self.face_mesh.process(rgb_frame)
+        face_landmarks = output.multi_face_landmarks
+
+        # Frame height and width to get necessary scaling
+        frame_h, frame_w, _ = frame.shape
+
+        if face_landmarks:
+            landmarks = face_landmarks[0].landmark
+            right_eye_iris_center = landmarks[473]
+            pos_x = right_eye_iris_center.x * frame_w
+            pos_y = right_eye_iris_center.y * frame_h
+            self.iris_positions[position] = (pos_x, pos_y)
+
     def complete_setup(self):
+        with open('iris_calibrations.json', 'w') as f:
+            json.dump(self.iris_positions, f)
         self.canvas.destroy()
         self.setup_label.config(text="Redirecting you to the browser", font=('Helvetica', 24, 'bold'))
         self.master.after(2000, self.open_browser)
