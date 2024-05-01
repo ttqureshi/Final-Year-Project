@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageDraw, ImageTk
 import webbrowser
+import time
 
 import cv2 as cv
 import mediapipe as mp
@@ -13,7 +14,7 @@ class SetupWindow:
         self.master.title("Active Eye Setup")
         self.master.attributes('-fullscreen', True)
 
-        self.positions = ['topleft', 'top center', 'topright', 'midleft', 'midcenter', 'midright', 'bottomleft', 'bottomcenter', 'bottomright']
+        self.positions = ['topleft', 'topcenter', 'topright', 'midleft', 'midcenter', 'midright', 'bottomleft', 'bottomcenter', 'bottomright']
         self.current_position_index = 0
 
         self.cap = cv.VideoCapture(0)
@@ -61,7 +62,7 @@ class SetupWindow:
     def get_position_coordinates(self, position, width, height):
         if position == 'topleft':
             return 0, 0
-        elif position == 'top center':
+        elif position == 'topcenter':
             return width // 2, 0
         elif position == 'topright':
             return width, 0
@@ -103,6 +104,9 @@ class SetupWindow:
             pos_x = right_eye_iris_center.x * frame_w
             pos_y = right_eye_iris_center.y * frame_h
             self.iris_positions[position] = (pos_x, pos_y)
+            cv.circle(frame, (int(pos_x), int(pos_y)), 1, (0, 255, 0), -1)
+            path = "imgs/" + position + ".png"
+            cv.imwrite(path, frame)
 
     def complete_setup(self):
         with open('iris_calibrations.json', 'w') as f:
