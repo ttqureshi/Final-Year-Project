@@ -45,7 +45,6 @@ class SetupWindow:
     def draw_highlight_area(self, position):
         width = self.master.winfo_screenwidth()
         height = self.master.winfo_screenheight()
-        print(f"width: {width}, height: {height}")
 
         radius = 50
         x, y = self.get_position_coordinates(position, width, height)
@@ -73,8 +72,8 @@ class SetupWindow:
 
     def animate_circle(self, x, y, radius):
         circle = self.canvas.create_oval(x - radius, y - radius, x + radius, y + radius, outline="red", width=5)
-        self.master.after(1000, lambda: self.canvas.delete(circle))
-        self.master.after(2000, self.highlight_next_position)
+        self.master.after(1400, lambda: self.canvas.delete(circle))
+        self.master.after(1400, self.highlight_next_position)
 
     def complete_setup(self):
         self.canvas.destroy()
