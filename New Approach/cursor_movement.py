@@ -87,6 +87,26 @@ def get_iris_center(frame, face_mesh):
     center = [x,y]
     return center
 
+def calc_eye_vertical_dist(frame, face_mesh):
+    frame = cv.flip(frame, 1)
+    frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+
+    output = face_mesh.process(frame)
+    face_landmarks = output.multi_face_landmarks
+
+    frame_h, frame_w, _ = frame.shape
+
+    if face_landmarks:
+        landmarks = face_landmarks[0].landmark
+        upper_lid = landmarks[386] # Top of the right eye
+        lower_lid = landmarks[374] # Bottom of the right eye
+
+        upper_y = int(upper_lid.y * frame_h)
+        lower_y = int(lower_lid.y * frame_h)
+
+        vertical_distance = lower_y - upper_y
+    return vertical_distance
+
 def get_vec_mag(vector):
     """
     Parameters
@@ -111,9 +131,11 @@ def main():
     f = open('iris_calibrations.json')
     iris_calibrations = json.load(f)
     f.close()
+    print(f"Before removing parallax: {iris_calibrations}\n")
 
     # Remove Parallax
     iris_calibrations = remove_parallax(iris_calibrations)
+    print(f"Removed parallax from calibration data: {iris_calibrations}")
 
     # save the old origin value
     old_origin = np.array(iris_calibrations['midcenter'])
@@ -135,6 +157,16 @@ def main():
         point = np.array(iris_calibrations[position])
         new_point = list(translate_and_vflip_coordinate(point, old_origin))
         iris_calibrations_translated[position] = new_point
+    
+    # finding the minimum eye opening threshold
+    f = open('eye_vertical_dist.json')
+    eye_vertical_dist = json.load(f)
+    f.close()
+
+    eye_vertical_dist_thresh = 10000
+    for position in positions:
+        eye_vertical_dist_thresh = min(eye_vertical_dist_thresh, eye_vertical_dist[position])
+    print(f"\neye_vertical_dist_thresh={eye_vertical_dist_thresh}\n")
 
     cap = cv.VideoCapture(0)
     face_mesh = mp.solutions.face_mesh.FaceMesh(refine_landmarks=True)
@@ -165,34 +197,35 @@ def main():
     try:
         while True:
             _, frame = cap.read()
+            vertical_dist = calc_eye_vertical_dist(frame, face_mesh)
             count += 1
 
-            if count > frame_timeout:
+            if True:
                 count = 0
-                curr_iris_center = np.array(get_iris_center(frame, face_mesh))
-                curr_iris_pos_vec = translate_and_vflip_coordinate(curr_iris_center, old_origin)
+                if (vertical_dist >= eye_vertical_dist_thresh):
+                    curr_iris_center = np.array(get_iris_center(frame, face_mesh))
+                    curr_iris_pos_vec = translate_and_vflip_coordinate(curr_iris_center, old_origin)
 
-                diff_vec = curr_iris_pos_vec - prev_iris_pos_vec
-                prev_iris_pos_vec = curr_iris_pos_vec
+                    diff_vec = curr_iris_pos_vec - prev_iris_pos_vec
+                    prev_iris_pos_vec = curr_iris_pos_vec
 
-                diff_vec_mag = int(get_vec_mag(diff_vec))
-                diff_unit_vec = get_unit_vec(diff_vec)
+                    diff_vec_mag = int(get_vec_mag(diff_vec))
+                    diff_unit_vec = get_unit_vec(diff_vec)
 
-                dots = np.array([np.dot(diff_unit_vec, unit_vk) for unit_vk in unit_v_ks])
-                closest_quant_dir = v_ks[np.argmax(dots)]
+                    dots = np.array([np.dot(diff_unit_vec, unit_vk) for unit_vk in unit_v_ks])
+                    closest_quant_dir = v_ks[np.argmax(dots)]
 
-                scaled = diff_vec_mag * eyebox_1_unit_in_xy
-                x_sign = int(math.copysign(1.0, closest_quant_dir[0]))
-                y_sign = int(math.copysign(1.0, closest_quant_dir[1]))
+                    scaled = diff_vec_mag * eyebox_1_unit_in_xy
+                    x_sign = int(math.copysign(1.0, closest_quant_dir[0]))
+                    y_sign = int(math.copysign(1.0, closest_quant_dir[1]))
 
-                scaled[0] = x_sign * scaled[0]
-                scaled[1] = (y_sign * scaled[1])
+                    scaled[0] = x_sign * scaled[0]
+                    scaled[1] = (y_sign * scaled[1])
 
-                cursor_cur_x, cursor_cur_y = pg.position()
-                new_x = cursor_cur_x + scaled[0]
-                new_y = cursor_cur_y + scaled[1]
-                pg.moveTo(new_x, new_y)
-
+                    cursor_cur_x, cursor_cur_y = pg.position()
+                    new_x = cursor_cur_x + scaled[0]
+                    new_y = cursor_cur_y + scaled[1]
+                    pg.moveTo(new_x, new_y)
 
     except Exception as e:
         print(f"An error occurred: {e}")
