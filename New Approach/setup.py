@@ -8,6 +8,8 @@ import cv2 as cv
 import mediapipe as mp
 import json
 
+import cursor_movement
+
 class SetupWindow:
     def __init__(self, master):
         self.master = master
@@ -20,6 +22,7 @@ class SetupWindow:
         self.cap = cv.VideoCapture(0)
         self.face_mesh = mp.solutions.face_mesh.FaceMesh(refine_landmarks=True)
         self.iris_positions = {}
+        self.eye_vertical_distance = {}
 
         self.show_instructions()
 
@@ -108,9 +111,23 @@ class SetupWindow:
             path = "imgs/" + position + ".png"
             cv.imwrite(path, frame)
 
+            upper_lid = landmarks[386] # Top of the right eye
+            lower_lid = landmarks[374] # Bottom of the right eye
+
+            upper_y = int(upper_lid.y * frame_h)
+            lower_y = int(lower_lid.y * frame_h)
+
+            vertical_distance = lower_y - upper_y
+            self.eye_vertical_distance[position] = vertical_distance
+
+
     def complete_setup(self):
         with open('iris_calibrations.json', 'w') as f:
             json.dump(self.iris_positions, f)
+
+        with open('eye_vertical_dist.json', 'w') as f:
+            json.dump(self.eye_vertical_distance, f)
+        
         self.canvas.destroy()
         self.setup_label.config(text="Redirecting you to the browser", font=('Helvetica', 24, 'bold'))
         self.master.after(2000, self.open_browser)
@@ -127,3 +144,4 @@ def start_setup():
 
 if __name__ == "__main__":
     start_setup()
+    cursor_movement.main()
