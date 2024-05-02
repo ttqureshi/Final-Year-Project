@@ -16,7 +16,7 @@ def remove_parallax(iris_calibrations):
         iris_calibrations (dict): A dictionary containing iris center coordinates for different screen positions (e.g., 'topleft': [x, y], 'midcenter': [x, y]).
 
     Returns:
-        dict: The modified dictionary `iris_calibrations` with parallax corrected coordinates for each position.
+        iris_calibrations (dict): The modified dictionary `iris_calibrations` with parallax corrected coordinates for each position.
     """
     
     left_edge_x = min(round(iris_calibrations['topleft'][0]),
@@ -62,7 +62,7 @@ def translate_and_vflip_coordinate(point, ref_origin):
         old_origin (numpy.ndarray): A NumPy array representing the reference origin point (x and y coordinates) (shape: (2,)).
 
     Returns:
-        list: A new NumPy array of shape (2,) containing the transformed x and y coordinates.
+        new_point (list): A new NumPy array of shape (2,) containing the transformed x and y coordinates.
     """
     new_point = point - ref_origin
     new_point[1] = -1 * new_point[1]
@@ -70,6 +70,16 @@ def translate_and_vflip_coordinate(point, ref_origin):
     return new_point
 
 def get_iris_center(frame, face_mesh):
+    """
+    Extracts the iris center coordinates from a given frame using a face mesh model.
+
+    Args:
+        frame (numpy.ndarray): The input frame (image) as a NumPy array (BGR color format).
+        face_mesh (object): A face mesh detection object (from MediaPipe).
+
+    Returns:
+        center (list): A list containing the iris center coordinates [x, y] if a face is detected, None otherwise.
+    """
     frame = cv.flip(frame, 1)
     frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
 
@@ -88,6 +98,16 @@ def get_iris_center(frame, face_mesh):
     return center
 
 def calc_eye_vertical_dist(frame, face_mesh):
+    """
+    Calculates the vertical distance between the upper and lower eyelid of the right eye.
+
+    Args:
+        frame (numpy.ndarray): The input frame (image) as a NumPy array (BGR color format).
+        face_mesh (object): A face mesh detection object (e.g., from MediaPipe).
+
+    Returns:
+        vertical_distance (int): The vertical distance between the upper and lower eyelid (in pixels) if a face is detected, None otherwise.
+    """
     frame = cv.flip(frame, 1)
     frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
 
