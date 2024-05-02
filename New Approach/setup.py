@@ -8,7 +8,7 @@ import cv2 as cv
 import mediapipe as mp
 import json
 
-import cursor_movement
+import cursor_movement_2
 
 class SetupWindow:
     def __init__(self, master):
@@ -144,4 +144,4 @@ def start_setup():
 
 if __name__ == "__main__":
     start_setup()
-    cursor_movement.main()
+    cursor_movement_2.main()
