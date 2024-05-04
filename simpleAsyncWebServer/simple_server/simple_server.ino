@@ -16,8 +16,8 @@ String statePin14 = "off";
 String statePin27 = "off";
 
 //Output variable to GPIO pins
-const int ledPin12 = 12;
-const int ledPin13 = 13;
+const int ledPin12 = 33;
+const int ledPin13 = 26;
 const int ledPin14 = 14;
 const int ledPin27 = 27;
 
@@ -27,13 +27,13 @@ void setup() {
   Serial.begin(115200);
 
   pinMode(ledPin13, OUTPUT);
-  digitalWrite(ledPin13, LOW);
+  digitalWrite(ledPin13, HIGH);
   pinMode(ledPin12, OUTPUT);
-  digitalWrite(ledPin12, LOW);
+  digitalWrite(ledPin12, HIGH);
   pinMode(ledPin14, OUTPUT);
-  digitalWrite(ledPin14, LOW);
+  digitalWrite(ledPin14, HIGH);
   pinMode(ledPin27, OUTPUT);
-  digitalWrite(ledPin27, LOW);
+  digitalWrite(ledPin27, HIGH);
 
   WiFi.begin(ssid, password);
   
@@ -53,49 +53,49 @@ void setup() {
 
   server.on("/12/on", HTTP_GET, [](AsyncWebServerRequest *request){
     statePin12 = "on";
-    digitalWrite(ledPin12, HIGH);
+    digitalWrite(ledPin12, LOW);
     request->send(200, "text/html", getPage());
   });
 
   server.on("/12/off", HTTP_GET, [](AsyncWebServerRequest *request){
     statePin12 = "off";
-    digitalWrite(ledPin12, LOW);
+    digitalWrite(ledPin12, HIGH);
     request->send(200, "text/html", getPage());
   });
 
   server.on("/13/on", HTTP_GET, [](AsyncWebServerRequest *request){
     statePin13 = "on";
-    digitalWrite(ledPin13, HIGH);
+    digitalWrite(ledPin13, LOW);
     request->send(200, "text/html", getPage());
   });
 
   server.on("/13/off", HTTP_GET, [](AsyncWebServerRequest *request){
     statePin13 = "off";
-    digitalWrite(ledPin13, LOW);
+    digitalWrite(ledPin13, HIGH);
     request->send(200, "text/html", getPage());
   });
 
   server.on("/14/on", HTTP_GET, [](AsyncWebServerRequest *request){
     statePin14 = "on";
-    digitalWrite(ledPin14, HIGH);
+    digitalWrite(ledPin14, LOW);
     request->send(200, "text/html", getPage());
   });
 
   server.on("/14/off", HTTP_GET, [](AsyncWebServerRequest *request){
     statePin14 = "off";
-    digitalWrite(ledPin14, LOW);
+    digitalWrite(ledPin14, HIGH);
     request->send(200, "text/html", getPage());
   });
 
   server.on("/27/on", HTTP_GET, [](AsyncWebServerRequest *request){
     statePin27 = "on";
-    digitalWrite(ledPin27, HIGH);
+    digitalWrite(ledPin27, LOW);
     request->send(200, "text/html", getPage());
   });
 
   server.on("/27/off", HTTP_GET, [](AsyncWebServerRequest *request){
     statePin27 = "off";
-    digitalWrite(ledPin27, LOW);
+    digitalWrite(ledPin27, HIGH);
     request->send(200, "text/html", getPage());
   });
 
